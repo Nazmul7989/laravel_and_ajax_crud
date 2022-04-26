@@ -27,9 +27,13 @@ class ProductController extends Controller
             ->select('id','title','price','subcategory_id','description','thumbnail')
             ->get();
 
-
-
         return response()->json($products);
+    }
+
+    public function show($id)
+    {
+        $product = Product::findOrFail($id);
+        return response()->json($product);
     }
 
 
@@ -53,16 +57,42 @@ class ProductController extends Controller
         $product->description     = $request->description;
         $product->save();
 
-        $this->index();
-
         return response()->json([
             'status'  => true,
             'data'    => $product,
             'message' => 'Product uploaded successfully.'
         ]);
 
+    }
 
+    public function update(Request $request,$id)
+    {
+        $product = Product::findOrFail($id);
 
+        //Save product image
+        if ($request->hasFile('thumbnail')){
+            $image_path = public_path($product->thumbnail);
+            if (file_exists($image_path)) {
+                @unlink($image_path);
+            }
+            $file = $request->file('thumbnail');
+            $extension = $file->getClientOriginalExtension();
+            $image = "Product_".time().".".$extension;
+            $file->move(public_path('/uploads/products/'),$image);
+            $product->thumbnail = '/uploads/products/' .$image;
+        }
+
+        $product->title           = $request->title;
+        $product->price           = $request->price;
+        $product->subcategory_id  = $request->subcategory_id;
+        $product->description     = $request->description;
+        $product->save();
+
+        return response()->json([
+            'status'  => true,
+            'data'    => $product,
+            'message' => 'Product uploaded successfully.'
+        ]);
 
     }
 
@@ -78,8 +108,6 @@ class ProductController extends Controller
         }
 
         $product->delete();
-
-        $this->index();
 
         return response()->json([
             'status'  => true,
